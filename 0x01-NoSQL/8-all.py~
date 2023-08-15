@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+"""listing all the documents in a collection with pthon"""
+
+
+from pymongo import MongoClient
+
+def list_all(mongo_collection):
+    """returns a list of all documents"""
+    if mongo_collection is None:
+        return[]
+    
+    all_documents = mongo_collection.find()
+    return all_documents 
