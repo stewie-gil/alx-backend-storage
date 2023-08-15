@@ -1,0 +1,2 @@
+// deleting where name= "Holberton School"
+db.school.deleteMany({name:{$ne:"Holberton school"}})
