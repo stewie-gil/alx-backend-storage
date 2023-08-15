@@ -1,0 +1,2 @@
+//adding new field in the document
+db.collection_name.updateMany( {"name": "Holberton school"}, {$set:{"address": "973 Mission street"}})
