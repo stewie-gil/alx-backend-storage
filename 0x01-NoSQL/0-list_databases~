@@ -1,0 +1,4 @@
+// mongodb to list all dbs
+
+mongo
+show dbs
