@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """This module contains the class cache"""
 
+
 import redis
 import uuid
 from functools import wraps
@@ -60,11 +61,3 @@ def replay(func: Callable):
     print(f"{method_name} was called {len(inputs)} times:")
     for input_args, output in zip(inputs, outputs):
         print(f"{method_name}{input_args.decode()} -> {output.decode()}")
-
-
-# Example usage
-cache = Cache()
-cache.store("foo")
-cache.store("bar")
-cache.store(42)
-replay(cache.store)
