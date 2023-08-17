@@ -22,21 +22,14 @@ def call_history(method: Callable) -> Callable:
         return result
     return wrapper
 
-def replay(method: Callable):
-    """ Replay the calls of a specific method """
-    m_name = method.__qualname__
-    inputs = f"{m_name}:inputs"
-    outputs = f"{m_name}:outputs"
-    r = redis.Redis()
-
-    data = r.get(m_name).decode("utf-8")
-    inputs_list = r.lrange(inputs, 0, -1)
-    outputs_list = r.lrange(outputs, 0, -1)
-
-    print(f"{m_name} was called {data} times:")
-
-    for k, v in zip(inputs_list, outputs_list):
-        print(f"{m_name}(*{k.decode('utf-8')}) -> {v.decode('utf-8')}")
+def replay(func: Callable):
+    method_name = func.__qualname__
+    inputs = cache._redis.lrange(f"{method_name}:inputs", 0, -1)
+    outputs = cache._redis.lrange(f"{method_name}:outputs", 0, -1)
+    
+    print(f"{method_name} was called {len(inputs)} times:")
+    for input_args, output in zip(inputs, outputs):
+        print(f"{method_name}{input_args.decode()} -> {output.decode()}")
 
 class Cache:
     """The cache class"""
@@ -64,4 +57,11 @@ class Cache:
 
     def get_int(self, key: str):
         return self.get(key, fn=int)
+
+# Example usage
+cache = Cache()
+cache.store("foo")
+cache.store("bar")
+cache.store(42)
+replay(cache.store)
 
