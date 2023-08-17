@@ -6,21 +6,23 @@ import uuid
 from functools import wraps
 from typing import Callable
 
+
 def call_history(method: Callable) -> Callable:
     """Decorator that stores input and output history"""
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         input_key = f"{method.__qualname__}:inputs"
         output_key = f"{method.__qualname__}:outputs"
-        
+
         self._redis.rpush(input_key, str(args))
-        
+
         result = method(self, *args, **kwargs)
-        
+
         self._redis.rpush(output_key, result)
-        
+
         return result
     return wrapper
+
 
 class Cache:
     """The cache class"""
@@ -49,11 +51,20 @@ class Cache:
     def get_int(self, key: str):
         return self.get(key, fn=int)
 
+
 def replay(func: Callable):
     method_name = func.__qualname__
     inputs = cache._redis.lrange(f"{method_name}:inputs", 0, -1)
     outputs = cache._redis.lrange(f"{method_name}:outputs", 0, -1)
-    
+
     print(f"{method_name} was called {len(inputs)} times:")
     for input_args, output in zip(inputs, outputs):
         print(f"{method_name}{input_args.decode()} -> {output.decode()}")
+
+
+# Example usage
+cache = Cache()
+cache.store("foo")
+cache.store("bar")
+cache.store(42)
+replay(cache.store)
