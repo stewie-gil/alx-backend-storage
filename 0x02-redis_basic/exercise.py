@@ -49,3 +49,19 @@ class Cache:
     def get_int(self, key: str):
         return self.get(key, fn=int)
 
+def replay(func: Callable):
+    method_name = func.__qualname__
+    inputs = cache._redis.lrange(f"{method_name}:inputs", 0, -1)
+    outputs = cache._redis.lrange(f"{method_name}:outputs", 0, -1)
+    
+    print(f"{method_name} was called {len(inputs)} times:")
+    for input_args, output in zip(inputs, outputs):
+        print(f"{method_name}{input_args.decode()} -> {output.decode()}")
+
+# Example usage
+cache = Cache()
+cache.store("foo")
+cache.store("bar")
+cache.store(42)
+replay(cache.store)
+
