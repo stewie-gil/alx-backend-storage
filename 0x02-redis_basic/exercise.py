@@ -5,6 +5,7 @@
 import redis
 import uuid
 from typing import Callable, Optional
+from functools import wraps
 
 
 class Cache:
@@ -33,15 +34,24 @@ class Cache:
     def get_int(self, key: str):
         return self.get(key, fn=int)
 
+def count_calls(method: Callable) -> Callable:
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        method_name = method.__qualname__
+        key = f"method:{method_name}"
+        self._redis.incr(key)
+        return method(self, *args, **kwargs)
+    return wrapper
 
+# Decorate Cache.store with count_calls
+Cache.store = count_calls(Cache.store)
+
+# Testing the decorated Cache class
 cache = Cache()
 
-TEST_CASES = {
-    b"foo": None,
-    123: int,
-    "bar": lambda d: d.decode("utf-8")
-}
+cache.store(b"first")
+print(cache.get(cache.store.__qualname__))
 
-for value, fn in TEST_CASES.items():
-    key = cache.store(value)
-    assert cache.get(key, fn=fn) == value
+cache.store(b"second")
+cache.store(b"third")
+print(cache.get(cache.store.__qualname__))
