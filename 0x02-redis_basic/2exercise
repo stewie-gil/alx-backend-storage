@@ -13,26 +13,25 @@ def call_history(method: Callable) -> Callable:
         """Wrapper function for call_history decorator"""
         input_key = f"{method.__qualname__}:inputs"
         output_key = f"{method.__qualname__}:outputs"
-
+        
         self._redis.rpush(input_key, str(args))
-
+        
         result = method(self, *args, **kwargs)
-
+        
         self._redis.rpush(output_key, result)
-
+        
         return result
     return wrapper
 
-def count_calls(method: Callable) -> Callable:
-    """Decorator that counts how many times methods are called"""
-    @wraps(method)
-    def wrapper(self, *args, **kwargs):
-        """Wrapper function for count_calls decorator"""
-        count_key = f"count:{method.__qualname__}"
-        self._redis.incr(count_key)
-        
-        return method(self, *args, **kwargs)
-    return wrapper
+def replay(func: Callable) -> None:
+    """Replay the history of calls for a given function"""
+    method_name = func.__qualname__
+    inputs = cache._redis.lrange(f"{method_name}:inputs", 0, -1)
+    outputs = cache._redis.lrange(f"{method_name}:outputs", 0, -1)
+    
+    print(f"{method_name} was called {len(inputs)} times:")
+    for input_args, output in zip(inputs, outputs):
+        print(f"{method_name}{input_args.decode()} -> {output.decode()}")
 
 class Cache:
     """The Cache class"""
@@ -43,7 +42,6 @@ class Cache:
         self._redis.flushdb()
 
     @call_history
-    @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """Store data and return a key"""
         key = str(uuid.uuid4())
@@ -66,13 +64,3 @@ class Cache:
     def get_int(self, key: str) -> int:
         """Retrieve data as an integer"""
         return self.get(key, fn=int)
-
-# Example usage
-if __name__ == "__main__":
-    cache = Cache()
-    cache.store(b"first")
-    print(cache.get(cache.store.__qualname__))
-    cache.store(b"second")
-    cache.store(b"third")
-    print(cache.get(cache.store.__qualname__))
-
