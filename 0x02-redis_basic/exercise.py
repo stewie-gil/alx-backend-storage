@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 """This module contains the class cache"""
 
-
 import redis
 import uuid
 from typing import Callable, Optional
 from functools import wraps
-
 
 class Cache:
     """ The cache class"""
@@ -43,15 +41,17 @@ def count_calls(method: Callable) -> Callable:
         return method(self, *args, **kwargs)
     return wrapper
 
-# Decorate Cache.store with count_calls
 Cache.store = count_calls(Cache.store)
 
-# Testing the decorated Cache class
 cache = Cache()
 
-cache.store(b"first")
-print(cache.get(cache.store.__qualname__))
+TEST_CASES = {
+    b"foo": None,
+    123: int,
+    "bar": lambda d: d.decode("utf-8")
+}
 
-cache.store(b"second")
-cache.store(b"third")
-print(cache.get(cache.store.__qualname__))
+for value, fn in TEST_CASES.items():
+    key = cache.store(value)
+    assert cache.get(key, fn=fn) == value
+
